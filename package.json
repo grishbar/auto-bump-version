@@ -17,7 +17,7 @@
     "node": ">=18"
   },
   "bin": {
-    "auto-bump-version": "./dist/bumpVersionPrecommitCli.js"
+    "auto-bump-version": "dist/bumpVersionPrecommitCli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
