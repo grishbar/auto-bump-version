@@ -3,11 +3,11 @@
 [![npm version](https://img.shields.io/npm/v/@niazox/auto-bump-version.svg)](https://www.npmjs.com/package/@niazox/auto-bump-version)
 [![CI](https://github.com/grishbar/auto-bump-version/actions/workflows/ci.yml/badge.svg)](https://github.com/grishbar/auto-bump-version/actions/workflows/ci.yml)
 
-Pre-commit, post-rebase, and CI helper that keeps `package.json` version **not below** `origin/<base>`.
+A tiny utility with almost no setup: every new commit against the base branch bumps `package.json` version by **1** (patch). Same command locally (Husky pre-commit) and in CI (`--check-only`).
 
-If the local version equals origin, it bumps the patch and stages `package.json`. If it is behind, the hook fails (unless you run `--post-rebase`, which jumps to origin patch+1 and amends HEAD). Baseline is always `origin/<branch>`, never the local branch tip.
+It keeps the version **not below** `origin/<base>`. If local equals origin, it increments the patch and stages `package.json`. If it is behind, the hook fails (unless you run `--post-rebase`, which jumps to origin patch+1 and amends HEAD). Baseline is always `origin/<branch>`, never the local branch tip.
 
-This GitHub repository uses `main`. The tool’s default comparison branch is **`develop`** (override with `--base-branch`).
+This GitHub repository uses `main`. The tool’s default comparison branch is **`develop`** (override with `--base-branch main` if that is your default branch).
 
 ## Install
 

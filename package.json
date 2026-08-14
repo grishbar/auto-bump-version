@@ -1,6 +1,6 @@
 {
   "name": "@niazox/auto-bump-version",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pre-commit, post-rebase, and CI helper that keeps package.json version ahead of origin/<base>.",
   "type": "module",
   "license": "MIT",
