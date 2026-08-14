@@ -1,6 +1,6 @@
-# auto-bump-version
+# @niazox/auto-bump-version
 
-[![npm version](https://img.shields.io/npm/v/auto-bump-version.svg)](https://www.npmjs.com/package/auto-bump-version)
+[![npm version](https://img.shields.io/npm/v/@niazox/auto-bump-version.svg)](https://www.npmjs.com/package/@niazox/auto-bump-version)
 [![CI](https://github.com/grishbar/auto-bump-version/actions/workflows/ci.yml/badge.svg)](https://github.com/grishbar/auto-bump-version/actions/workflows/ci.yml)
 
 Pre-commit, post-rebase, and CI helper that keeps `package.json` version **not below** `origin/<base>`.
@@ -12,7 +12,7 @@ This GitHub repository uses `main`. The tool’s default comparison branch is **
 ## Install
 
 ```bash
-npm i -D auto-bump-version
+npm i -D @niazox/auto-bump-version
 ```
 
 ## Husky
@@ -75,7 +75,7 @@ import {
   nextVersionAgainstOrigin,
   parseProjectVersion,
   resolveBaseBranch,
-} from 'auto-bump-version';
+} from '@niazox/auto-bump-version';
 
 bumpPatch('14.2.1'); // '14.2.2'
 nextVersionAgainstOrigin('14.2.1', '14.2.5'); // { cmp: -1, next: '14.2.6' }
