@@ -92,7 +92,7 @@ describe('bumpVersionPrecommit CLI', () => {
     const result = runCli(workDir);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('1.0.0 → 1.0.1');
+    expect(result.stdout).toContain('Bumped package.json 1.0.0 → 1.0.1');
     expect(readVersion(workDir)).toBe('1.0.1');
     expect(git(workDir, ['diff', '--cached', '--name-only']).trim()).toBe('package.json');
   });
@@ -103,6 +103,7 @@ describe('bumpVersionPrecommit CLI', () => {
     const result = runCli(workDir);
 
     expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Nothing to do');
     expect(fs.readFileSync(path.join(workDir, 'package.json'), 'utf-8')).toBe(before);
     expect(git(workDir, ['diff', '--cached', '--name-only']).trim()).toBe('');
   });
@@ -112,7 +113,7 @@ describe('bumpVersionPrecommit CLI', () => {
     const result = runCli(workDir);
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain('is less than origin/main');
+    expect(result.stderr).toContain('is behind origin/main');
     expect(readVersion(workDir)).toBe('1.0.0');
   });
 
@@ -122,7 +123,7 @@ describe('bumpVersionPrecommit CLI', () => {
     const result = runCli(workDir, ['--check-only']);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('version OK');
+    expect(result.stdout).toContain('Version looks good');
     expect(fs.readFileSync(path.join(workDir, 'package.json'), 'utf-8')).toBe(before);
   });
 
@@ -133,7 +134,7 @@ describe('bumpVersionPrecommit CLI', () => {
     const result = runCli(workDir);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('skip (rebase or cherry-pick in progress)');
+    expect(result.stdout).toContain('Skipping the version bump because a rebase or cherry-pick is in progress');
     expect(readVersion(workDir)).toBe('1.0.0');
   });
 
@@ -142,7 +143,7 @@ describe('bumpVersionPrecommit CLI', () => {
     const result = runCli(workDir, ['--check-only', '--post-rebase']);
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain('--check-only and --post-rebase cannot be used together');
+    expect(result.stderr).toContain('Cannot run --check-only and --post-rebase together');
   });
 
   test('init --yes writes Husky hooks for main', () => {

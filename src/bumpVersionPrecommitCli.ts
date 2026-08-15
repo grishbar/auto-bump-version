@@ -33,6 +33,19 @@ import {
   resolveBaseBranch,
 } from './bumpVersionPrecommit.js';
 import { runInit } from './bumpVersionInit.js';
+import {
+  msgAlreadyAhead,
+  msgAmended,
+  msgBehindOrigin,
+  msgBumped,
+  msgCheckOnlyOk,
+  msgConflictingFlags,
+  msgInvalidVersions,
+  msgMissingOriginVersion,
+  msgPackageJsonNotFound,
+  msgPackageJsonOutsideGit,
+  msgSkipRebaseOrCherryPick,
+} from './messages.js';
 
 const { checkOnly: CHECK_ONLY, postRebase: POST_REBASE, baseBranch: CLI_BASE_BRANCH } =
   parseBumpVersionCliArgs(process.argv.slice(2));
@@ -51,9 +64,7 @@ function resolveHostProjectRoot(): string {
     }
     dir = path.dirname(dir);
   }
-  throw new Error(
-    'bump-version-precommit: package.json not found (walk up from process.cwd() or set BUMP_VERSION_PROJECT_ROOT)'
-  );
+  throw new Error(msgPackageJsonNotFound());
 }
 
 /** Path to package.json as in `git show ref:<path>` (posix, relative to repo root). */
@@ -65,7 +76,7 @@ function packageJsonPathInGitRepo(projectRoot: string): string {
   const absPkg = path.join(projectRoot, 'package.json');
   const rel = path.relative(gitRoot, absPkg);
   if (rel.startsWith('..')) {
-    throw new Error('bump-version-precommit: package.json is outside the git repository');
+    throw new Error(msgPackageJsonOutsideGit());
   }
   return rel.split(path.sep).join('/');
 }
@@ -149,7 +160,7 @@ function main(): void {
   }
 
   if (CHECK_ONLY && POST_REBASE) {
-    console.error('bump-version-precommit: --check-only and --post-rebase cannot be used together');
+    console.error(msgConflictingFlags());
     process.exit(1);
   }
 
@@ -160,7 +171,7 @@ function main(): void {
   // Local pre-commit / post-rebase: do not run while rebase/cherry-pick is still in progress.
   // CI --check-only must still enforce the version constraint.
   if (!CHECK_ONLY && shouldSkipForRebaseOrCherryPick(rootDir)) {
-    console.log('bump-version-precommit: skip (rebase or cherry-pick in progress)');
+    console.log(msgSkipRebaseOrCherryPick());
     process.exit(0);
   }
 
@@ -173,47 +184,35 @@ function main(): void {
 
   const originVersion = getOriginBranchPackageVersion(baseBranch, rootDir, pkgGitPath);
   if (originVersion == null) {
-    console.error(
-      `bump-version-precommit: could not read version from origin/${baseBranch} (fetch and try again)`
-    );
+    console.error(msgMissingOriginVersion(baseBranch));
     process.exit(1);
   }
 
   const decision = nextVersionAgainstOrigin(currentVersion, originVersion);
   if (decision == null) {
-    console.error(
-      'bump-version-precommit: invalid version (expected N.N.N or N.N.N-suffix):',
-      currentVersion,
-      'vs',
-      originVersion
-    );
+    console.error(msgInvalidVersions(currentVersion, originVersion));
     process.exit(1);
   }
 
   const { cmp, next: newVersion } = decision;
 
   if (cmp < 0 && !POST_REBASE) {
-    console.error(
-      `bump-version-precommit: package.json version ${currentVersion} is less than origin/${baseBranch} (${originVersion}). Rebase or bump the version.`
-    );
+    console.error(msgBehindOrigin(currentVersion, originVersion, baseBranch));
     process.exit(1);
   }
 
   if (CHECK_ONLY) {
-    console.log(
-      `bump-version-precommit: version OK (${currentVersion} >= ${originVersion} on origin/${baseBranch})`
-    );
+    console.log(msgCheckOnlyOk(currentVersion, originVersion, baseBranch));
     process.exit(0);
   }
 
   if (cmp > 0) {
+    console.log(msgAlreadyAhead(currentVersion, originVersion, baseBranch));
     process.exit(0);
   }
 
   pkg.version = newVersion;
   fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf-8');
-  const reason = cmp < 0 ? `was behind origin/${baseBranch}` : `matched origin/${baseBranch}`;
-  console.log(`bump-version-precommit: ${currentVersion} → ${newVersion} (${reason})`);
 
   const addResult = spawnSync('git', ['add', packagePath], {
     cwd: rootDir,
@@ -223,8 +222,11 @@ function main(): void {
     process.exit(1);
   }
 
+  console.log(msgBumped(currentVersion, newVersion, baseBranch, cmp < 0));
+
   if (POST_REBASE) {
     amendHeadWithStagedVersion(rootDir);
+    console.log(msgAmended());
   }
 
   process.exit(0);
