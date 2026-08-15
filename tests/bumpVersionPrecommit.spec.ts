@@ -72,9 +72,9 @@ describe('parseBumpVersionCliArgs', () => {
 });
 
 describe('resolveBaseBranch', () => {
-  test('defaults to develop when nothing is passed', () => {
+  test('defaults to main when nothing is passed', () => {
     expect(resolveBaseBranch()).toBe(DEFAULT_BASE_BRANCH);
-    expect(resolveBaseBranch({})).toBe('develop');
+    expect(resolveBaseBranch({})).toBe('main');
   });
 
   test('uses the explicit CLI branch when provided', () => {
@@ -110,7 +110,7 @@ describe('resolveBaseBranch', () => {
         ciTargetBranch: 'release',
         envBaseBranch: 'staging',
       })
-    ).toBe('develop');
+    ).toBe('main');
   });
 });
 

@@ -2,7 +2,7 @@
  * Pure version helpers for bumpVersionPrecommit (imported by CLI and tests).
  */
 
-export const DEFAULT_BASE_BRANCH = 'develop';
+export const DEFAULT_BASE_BRANCH = 'main';
 
 export type BumpVersionCliFlags = {
   checkOnly: boolean;
@@ -40,7 +40,7 @@ export function parseBumpVersionCliArgs(argv: string[]): BumpVersionCliFlags {
 }
 
 /**
- * Branch to compare against: CLI `--base-branch` wins, then CI env in `--check-only`, else `develop`.
+ * Branch to compare against: CLI `--base-branch` wins, then CI env in `--check-only`, else `main`.
  */
 export function resolveBaseBranch(options: {
   cliBranch?: string | null;

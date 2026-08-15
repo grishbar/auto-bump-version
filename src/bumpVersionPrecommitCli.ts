@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * Pre-commit: ensure package.json version is not less than origin/<base> (default develop).
+ * Pre-commit: ensure package.json version is not less than origin/<base> (default main).
  * Override the base with `--base-branch <name>` (or `--base-branch=<name>`).
  * If it equals origin, bumps patch and stages package.json.
  * Always reads the baseline from origin/<branch> only (not the local branch tip).
  *
- * Suffix after "-" is allowed on the MR side (e.g. 14.2.1-fix vs 14.2.1 on develop) — not treated as older.
+ * Suffix after "-" is allowed on the MR side (e.g. 14.2.1-fix vs 14.2.1 on main) — not treated as older.
  *
  * Local pre-commit skips entirely during rebase / cherry-pick so `--continue` is not blocked
- * when the in-progress commit still has a version below origin/develop.
+ * when the in-progress commit still has a version below origin/main.
  *
  * After rebase: run with --post-rebase (Husky `.husky/post-rewrite`, only when "$1" is rebase).
  * If version is equal to or behind origin, bumps to origin patch+1 and amends HEAD

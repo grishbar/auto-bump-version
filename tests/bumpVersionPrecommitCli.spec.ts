@@ -41,7 +41,7 @@ function createFixture(options: {
   localVersion?: string;
   branch?: string;
 }): { root: string; workDir: string } {
-  const branch = options.branch ?? 'develop';
+  const branch = options.branch ?? 'main';
   const tmpRoot = path.join(fileURLToPath(new URL('.', import.meta.url)), '.tmp');
   fs.mkdirSync(tmpRoot, { recursive: true });
   const root = fs.mkdtempSync(path.join(tmpRoot, 'auto-bump-'));
@@ -112,7 +112,7 @@ describe('bumpVersionPrecommit CLI', () => {
     const result = runCli(workDir);
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain('is less than origin/develop');
+    expect(result.stderr).toContain('is less than origin/main');
     expect(readVersion(workDir)).toBe('1.0.0');
   });
 

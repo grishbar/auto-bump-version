@@ -7,7 +7,7 @@ A tiny utility with almost no setup: every new commit against the base branch bu
 
 It keeps the version **not below** `origin/<base>`. If local equals origin, it increments the patch and stages `package.json`. If it is behind, the hook fails (unless you run `--post-rebase`, which jumps to origin patch+1 and amends HEAD). Baseline is always `origin/<branch>`, never the local branch tip.
 
-This GitHub repository uses `main`. The tool’s default comparison branch is **`develop`** (override with `--base-branch main` if that is your default branch).
+The default comparison branch is **`main`**. Override with `--base-branch` (for example `--base-branch develop`).
 
 ## Install
 
@@ -47,7 +47,7 @@ npx auto-bump-version --check-only
 | --- | --- |
 | `--check-only` | Verify `current >= origin`; no writes. Incompatible with `--post-rebase`. |
 | `--post-rebase` | If equal or behind origin, bump to origin patch+1, stage, and `git commit --amend --no-edit --no-verify`. |
-| `--base-branch <name>` | Compare against `origin/<name>` instead of `develop`. Also `--base-branch=<name>`. |
+| `--base-branch <name>` | Compare against `origin/<name>` instead of `main`. Also `--base-branch=<name>`. |
 
 ## Environment
 
