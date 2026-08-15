@@ -88,7 +88,7 @@ describe('resolveBaseBranch', () => {
     ).toBe('main');
   });
 
-  test('in --check-only falls back to CI env then VERSION_CHECK_BASE_BRANCH', () => {
+  test('in --check-only falls back to GitLab CI, then GitHub PR base, then VERSION_CHECK_BASE_BRANCH', () => {
     expect(
       resolveBaseBranch({
         checkOnly: true,
@@ -98,9 +98,22 @@ describe('resolveBaseBranch', () => {
     expect(
       resolveBaseBranch({
         checkOnly: true,
+        githubBaseBranch: 'main',
+      })
+    ).toBe('main');
+    expect(
+      resolveBaseBranch({
+        checkOnly: true,
         envBaseBranch: 'staging',
       })
     ).toBe('staging');
+    expect(
+      resolveBaseBranch({
+        checkOnly: true,
+        githubBaseBranch: 'release/1.0',
+        envBaseBranch: 'staging',
+      })
+    ).toBe('release/1.0');
   });
 
   test('ignores CI env outside --check-only', () => {

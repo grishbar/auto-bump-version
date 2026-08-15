@@ -1,0 +1,25 @@
+name: Check package version
+description: Fail the job if package.json version is behind origin/<base>.
+author: grishbar
+branding:
+  icon: chevrons-up
+  color: blue
+inputs:
+  base-branch:
+    description: Branch to compare against. Defaults to main, or the pull request base on GitHub.
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Check package.json is not behind origin
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        INPUT_BASE_BRANCH: ${{ inputs.base-branch }}
+      run: |
+        extra=()
+        if [ -n "$INPUT_BASE_BRANCH" ]; then
+          extra+=(--base-branch "$INPUT_BASE_BRANCH")
+        fi
+        npx --yes @niazox/auto-bump-version --check-only "${extra[@]}"

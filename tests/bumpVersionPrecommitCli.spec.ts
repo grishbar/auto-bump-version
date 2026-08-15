@@ -158,6 +158,7 @@ describe('bumpVersionPrecommit CLI', () => {
     expect(fs.readFileSync(path.join(workDir, '.husky/post-rewrite'), 'utf-8')).toContain(
       '--post-rebase'
     );
+    expect(fs.existsSync(path.join(workDir, '.github/workflows/check-version.yml'))).toBe(true);
   });
 
   test('init --base-branch records the chosen branch', () => {

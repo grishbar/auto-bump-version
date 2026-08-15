@@ -46,6 +46,7 @@ export function resolveBaseBranch(options: {
   cliBranch?: string | null;
   checkOnly?: boolean;
   ciTargetBranch?: string | null;
+  githubBaseBranch?: string | null;
   envBaseBranch?: string | null;
 } = {}): string {
   const fromCli = options.cliBranch?.trim();
@@ -54,6 +55,8 @@ export function resolveBaseBranch(options: {
   if (options.checkOnly) {
     const fromCi = options.ciTargetBranch?.trim();
     if (fromCi) return fromCi;
+    const fromGithub = options.githubBaseBranch?.trim();
+    if (fromGithub) return fromGithub;
     const fromEnv = options.envBaseBranch?.trim();
     if (fromEnv) return fromEnv;
   }

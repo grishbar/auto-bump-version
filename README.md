@@ -16,7 +16,7 @@ npm i -D @niazox/auto-bump-version husky
 npx auto-bump-version init
 ```
 
-`init` asks for your default branch (Enter keeps `main`), then writes Husky `pre-commit` and `post-rewrite` hooks. Use `--yes` to skip the prompt, or `--base-branch develop` to set it without asking.
+`init` asks for your default branch (Enter keeps `main`), then writes Husky hooks and `.github/workflows/check-version.yml`. Use `--yes` to skip the prompt, or `--base-branch develop` to set it without asking.
 
 ## Husky
 
@@ -38,11 +38,36 @@ fi
 
 ## CI
 
-```bash
-npx auto-bump-version --check-only
+`--check-only` does not write files. Fetch is shallow (`--depth=1`) only in this mode so local clones stay non-shallow.
+
+On GitHub pull requests it uses `GITHUB_BASE_REF` when `--base-branch` is not set. On GitLab MRs it uses `CI_MERGE_REQUEST_TARGET_BRANCH_NAME`.
+
+### GitHub Actions
+
+`init` already writes this workflow. You can also add it by hand:
+
+```yaml
+# .github/workflows/check-version.yml
+name: Check version
+
+on:
+  pull_request:
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grishbar/auto-bump-version@main
+        with:
+          base-branch: main
 ```
 
-`--check-only` does not write files. In GitLab MRs it uses `CI_MERGE_REQUEST_TARGET_BRANCH_NAME` when `--base-branch` is not set. Fetch is shallow (`--depth=1`) only in this mode so local clones stay non-shallow.
+Or call the CLI after checkout:
+
+```yaml
+- run: npx auto-bump-version --check-only --base-branch main
+```
 
 ## Flags
 
@@ -51,7 +76,7 @@ npx auto-bump-version --check-only
 | `--check-only` | Verify `current >= origin`; no writes. Incompatible with `--post-rebase`. |
 | `--post-rebase` | If equal or behind origin, bump to origin patch+1, stage, and `git commit --amend --no-edit --no-verify`. |
 | `--base-branch <name>` | Compare against `origin/<name>` instead of `main`. Also `--base-branch=<name>`. |
-| `init` | Write Husky hooks. Asks for the default branch unless `--yes` / `--base-branch` is set. |
+| `init` | Write Husky hooks and a GitHub Actions workflow. Asks for the default branch unless `--yes` / `--base-branch` is set. |
 
 ## Environment
 
@@ -61,6 +86,7 @@ npx auto-bump-version --check-only
 | `VERSION_CHECK_ROOT` | Same as `BUMP_VERSION_PROJECT_ROOT`. |
 | `VERSION_CHECK_BASE_BRANCH` | Fallback base branch in `--check-only` when CLI and CI target are unset. |
 | `CI_MERGE_REQUEST_TARGET_BRANCH_NAME` | GitLab MR target; used in `--check-only` after CLI `--base-branch`. |
+| `GITHUB_BASE_REF` | GitHub pull request base branch; used in `--check-only` after the GitLab variable. |
 
 Without those, the CLI walks up from `process.cwd()` to the nearest `package.json`, so it works when installed under `node_modules`.
 

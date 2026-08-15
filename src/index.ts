@@ -13,6 +13,7 @@ export {
   type VersionAgainstOrigin,
 } from './bumpVersionPrecommit.js';
 export {
+  githubCheckVersionWorkflow,
   huskyPostRewriteScript,
   huskyPreCommitScript,
   parseInitCliArgs,

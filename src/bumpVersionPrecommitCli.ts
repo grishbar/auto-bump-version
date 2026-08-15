@@ -75,6 +75,7 @@ function resolveCliBaseBranch(): string {
     cliBranch: CLI_BASE_BRANCH,
     checkOnly: CHECK_ONLY,
     ciTargetBranch: process.env.CI_MERGE_REQUEST_TARGET_BRANCH_NAME,
+    githubBaseBranch: process.env.GITHUB_BASE_REF,
     envBaseBranch: process.env.VERSION_CHECK_BASE_BRANCH,
   });
 }

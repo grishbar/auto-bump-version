@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach } from 'vitest';
 
 import {
+  githubCheckVersionWorkflow,
   huskyPostRewriteScript,
   huskyPreCommitScript,
   parseInitCliArgs,
@@ -61,6 +62,15 @@ describe('husky scripts', () => {
   });
 });
 
+describe('githubCheckVersionWorkflow', () => {
+  test('pins the chosen base branch on the reusable action', () => {
+    const yaml = githubCheckVersionWorkflow('develop');
+    expect(yaml).toContain('uses: grishbar/auto-bump-version@main');
+    expect(yaml).toContain('base-branch: develop');
+    expect(yaml).toContain('pull_request');
+  });
+});
+
 const tmpDirs: string[] = [];
 
 afterEach(() => {
@@ -77,14 +87,25 @@ describe('writeInitFiles', () => {
     tmpDirs.push(root);
 
     const first = writeInitFiles(root, 'main');
-    expect(first.written).toEqual(['.husky/pre-commit', '.husky/post-rewrite']);
+    expect(first.written).toEqual([
+      '.husky/pre-commit',
+      '.husky/post-rewrite',
+      '.github/workflows/check-version.yml',
+    ]);
     expect(first.skipped).toEqual([]);
     expect(fs.readFileSync(path.join(root, '.husky/pre-commit'), 'utf-8')).toContain(
       "--base-branch 'main'"
     );
+    expect(fs.readFileSync(path.join(root, '.github/workflows/check-version.yml'), 'utf-8')).toContain(
+      'base-branch: main'
+    );
 
     const second = writeInitFiles(root, 'develop');
     expect(second.written).toEqual([]);
-    expect(second.skipped).toEqual(['.husky/pre-commit', '.husky/post-rewrite']);
+    expect(second.skipped).toEqual([
+      '.husky/pre-commit',
+      '.husky/post-rewrite',
+      '.github/workflows/check-version.yml',
+    ]);
   });
 });

@@ -70,13 +70,35 @@ export type InitWriteResult = {
   skipped: string[];
 };
 
+export function githubCheckVersionWorkflow(baseBranch: string): string {
+  return `name: Check version
+
+on:
+  pull_request:
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grishbar/auto-bump-version@main
+        with:
+          base-branch: ${baseBranch}
+`;
+}
+
 export function writeInitFiles(projectRoot: string, baseBranch: string): InitWriteResult {
   const huskyDir = path.join(projectRoot, '.husky');
   fs.mkdirSync(huskyDir, { recursive: true });
+  fs.mkdirSync(path.join(projectRoot, '.github', 'workflows'), { recursive: true });
 
   const files: { rel: string; contents: string }[] = [
     { rel: path.join('.husky', 'pre-commit'), contents: huskyPreCommitScript(baseBranch) },
     { rel: path.join('.husky', 'post-rewrite'), contents: huskyPostRewriteScript(baseBranch) },
+    {
+      rel: path.join('.github', 'workflows', 'check-version.yml'),
+      contents: githubCheckVersionWorkflow(baseBranch),
+    },
   ];
 
   const written: string[] = [];
