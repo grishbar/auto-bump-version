@@ -144,4 +144,30 @@ describe('bumpVersionPrecommit CLI', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('--check-only and --post-rebase cannot be used together');
   });
+
+  test('init --yes writes Husky hooks for main', () => {
+    const { workDir } = createFixture({ originVersion: '1.0.0' });
+    const result = runCli(workDir, ['init', '--yes']);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Using base branch: main');
+    expect(result.stdout).toContain('Wrote .husky/pre-commit');
+    expect(fs.readFileSync(path.join(workDir, '.husky/pre-commit'), 'utf-8')).toContain(
+      "--base-branch 'main'"
+    );
+    expect(fs.readFileSync(path.join(workDir, '.husky/post-rewrite'), 'utf-8')).toContain(
+      '--post-rebase'
+    );
+  });
+
+  test('init --base-branch records the chosen branch', () => {
+    const { workDir } = createFixture({ originVersion: '1.0.0' });
+    const result = runCli(workDir, ['init', '--yes', '--base-branch', 'develop']);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Using base branch: develop');
+    expect(fs.readFileSync(path.join(workDir, '.husky/pre-commit'), 'utf-8')).toContain(
+      "--base-branch 'develop'"
+    );
+  });
 });

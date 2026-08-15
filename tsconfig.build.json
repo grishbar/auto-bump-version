@@ -5,5 +5,5 @@
     "outDir": "./dist",
     "noEmit": false
   },
-  "include": ["src/index.ts", "src/bumpVersionPrecommit.ts", "src/bumpVersionPrecommitCli.ts"]
+  "include": ["src/index.ts", "src/bumpVersionPrecommit.ts", "src/bumpVersionPrecommitCli.ts", "src/bumpVersionInit.ts"]
 }

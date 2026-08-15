@@ -12,3 +12,10 @@ export {
   type ParsedProjectVersion,
   type VersionAgainstOrigin,
 } from './bumpVersionPrecommit.js';
+export {
+  huskyPostRewriteScript,
+  huskyPreCommitScript,
+  parseInitCliArgs,
+  promptDefaultBranch,
+  writeInitFiles,
+} from './bumpVersionInit.js';

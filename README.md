@@ -12,8 +12,11 @@ The default comparison branch is **`main`**. Override with `--base-branch` (for 
 ## Install
 
 ```bash
-npm i -D @niazox/auto-bump-version
+npm i -D @niazox/auto-bump-version husky
+npx auto-bump-version init
 ```
+
+`init` asks for your default branch (Enter keeps `main`), then writes Husky `pre-commit` and `post-rewrite` hooks. Use `--yes` to skip the prompt, or `--base-branch develop` to set it without asking.
 
 ## Husky
 
@@ -48,6 +51,7 @@ npx auto-bump-version --check-only
 | `--check-only` | Verify `current >= origin`; no writes. Incompatible with `--post-rebase`. |
 | `--post-rebase` | If equal or behind origin, bump to origin patch+1, stage, and `git commit --amend --no-edit --no-verify`. |
 | `--base-branch <name>` | Compare against `origin/<name>` instead of `main`. Also `--base-branch=<name>`. |
+| `init` | Write Husky hooks. Asks for the default branch unless `--yes` / `--base-branch` is set. |
 
 ## Environment
 

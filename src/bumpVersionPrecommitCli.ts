@@ -32,6 +32,7 @@ import {
   parseBumpVersionCliArgs,
   resolveBaseBranch,
 } from './bumpVersionPrecommit.js';
+import { runInit } from './bumpVersionInit.js';
 
 const { checkOnly: CHECK_ONLY, postRebase: POST_REBASE, baseBranch: CLI_BASE_BRANCH } =
   parseBumpVersionCliArgs(process.argv.slice(2));
@@ -129,6 +130,23 @@ function amendHeadWithStagedVersion(cwd: string): void {
 }
 
 function main(): void {
+  const argv = process.argv.slice(2);
+  if (argv[0] === 'init') {
+    const rootDir = (() => {
+      try {
+        return resolveHostProjectRoot();
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : err);
+        process.exit(1);
+      }
+    })();
+    void runInit(argv.slice(1), { projectRoot: rootDir }).catch((err) => {
+      console.error(err instanceof Error ? err.message : err);
+      process.exit(1);
+    });
+    return;
+  }
+
   if (CHECK_ONLY && POST_REBASE) {
     console.error('bump-version-precommit: --check-only and --post-rebase cannot be used together');
     process.exit(1);
