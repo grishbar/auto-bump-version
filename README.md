@@ -5,6 +5,8 @@
 
 A tiny utility with almost no setup: every new commit against the base branch bumps `package.json` version by **1** (patch). Same command locally (Husky pre-commit) and in CI (`--check-only`).
 
+![Demo: a commit bumps the package.json patch version](./assets/demo.gif)
+
 It keeps the version **not below** `origin/<base>`. If local equals origin, it increments the patch and stages `package.json`. If it is behind, the hook fails (unless you run `--post-rebase`, which jumps to origin patch+1 and amends HEAD). Baseline is always `origin/<branch>`, never the local branch tip.
 
 The default comparison branch is **`main`**. Override with `--base-branch` (for example `--base-branch develop`).
