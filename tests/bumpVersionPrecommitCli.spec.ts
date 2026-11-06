@@ -64,6 +64,7 @@ function createFixture(options: {
 
   if (options.localVersion != null && options.localVersion !== options.originVersion) {
     writePkg(workDir, options.localVersion);
+    git(workDir, ['add', 'package.json']);
   }
 
   return { root, workDir };
@@ -105,7 +106,7 @@ describe('bumpVersionPrecommit CLI', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Nothing to do');
     expect(fs.readFileSync(path.join(workDir, 'package.json'), 'utf-8')).toBe(before);
-    expect(git(workDir, ['diff', '--cached', '--name-only']).trim()).toBe('');
+    expect(git(workDir, ['diff', '--cached', '--name-only']).trim()).toBe('package.json');
   });
 
   test('exits 1 when version is behind origin without --post-rebase', () => {
@@ -144,6 +145,63 @@ describe('bumpVersionPrecommit CLI', () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('Cannot run --check-only and --post-rebase together');
+  });
+
+  test('uses the staged version and preserves unstaged fields', () => {
+    const { workDir } = createFixture({ originVersion: '1.0.0' });
+    fs.writeFileSync(path.join(workDir, 'package.json'), JSON.stringify({ version: '9.0.0', private: true }));
+    expect(runCli(workDir).status).toBe(0);
+    const indexed = JSON.parse(git(workDir, ['show', ':package.json']));
+    expect(indexed.version).toBe('1.0.1');
+    expect(indexed.private).toBeUndefined();
+    expect(readVersion(workDir)).toBe('9.0.0');
+  });
+
+  test('skips cherry-pick even when the staged version is behind', () => {
+    const { workDir } = createFixture({ originVersion: '2.0.0', localVersion: '1.0.0' });
+    fs.writeFileSync(path.join(workDir, '.git', 'CHERRY_PICK_HEAD'), 'dummy');
+    expect(runCli(workDir).status).toBe(0);
+    expect(readVersion(workDir)).toBe('1.0.0');
+  });
+
+  test('post-rebase amends HEAD despite rebase markers and preserves staged edits', () => {
+    const { workDir } = createFixture({ originVersion: '1.0.0' });
+    fs.mkdirSync(path.join(workDir, '.git', 'rebase-merge'));
+    fs.writeFileSync(path.join(workDir, 'extra.txt'), 'pending');
+    git(workDir, ['add', 'extra.txt']);
+    fs.writeFileSync(path.join(workDir, 'package.json'), JSON.stringify({ name: 'host-app', version: '1.0.0', private: true }));
+    git(workDir, ['add', 'package.json']);
+    const result = runCli(workDir, ['--post-rebase']);
+    expect(result.status, result.stderr).toBe(0);
+    const committed = JSON.parse(git(workDir, ['show', 'HEAD:package.json']));
+    expect(committed.version).toBe('1.0.1');
+    expect(committed.private).toBeUndefined();
+    expect(git(workDir, ['ls-tree', '--name-only', 'HEAD'])).not.toContain('extra.txt');
+    expect(JSON.parse(git(workDir, ['show', ':package.json'])).private).toBe(true);
+    expect(git(workDir, ['diff', '--cached', '--name-only'])).toContain('extra.txt');
+    expect(git(workDir, ['log', '-1', '--format=%s']).trim()).toBe('init');
+  });
+
+  test('a real rebase automatically bumps the last commit through post-rewrite', () => {
+    const { workDir } = createFixture({ originVersion: '1.0.0' });
+    git(workDir, ['checkout', '-b', 'feature']);
+    fs.writeFileSync(path.join(workDir, 'feature.txt'), 'feature');
+    git(workDir, ['add', 'feature.txt']);
+    git(workDir, ['commit', '-m', 'feature']);
+    git(workDir, ['checkout', 'main']);
+    writePkg(workDir, '1.0.1');
+    git(workDir, ['add', 'package.json']);
+    git(workDir, ['commit', '-m', 'base update']);
+    git(workDir, ['push', 'origin', 'main']);
+    git(workDir, ['checkout', 'feature']);
+    const hooks = path.join(workDir, '.git', 'hooks');
+    fs.mkdirSync(hooks, { recursive: true });
+    fs.writeFileSync(path.join(hooks, 'post-rewrite'),
+      `#!/bin/sh\nif [ "$1" = rebase ]; then\n  "${tsxBin}" "${cliPath}" --post-rebase\nfi\n`, { mode: 0o755 });
+    git(workDir, ['rebase', 'main']);
+    expect(JSON.parse(git(workDir, ['show', 'HEAD:package.json'])).version).toBe('1.0.2');
+    expect(git(workDir, ['log', '-1', '--format=%s']).trim()).toBe('feature');
+    expect(git(workDir, ['status', '--porcelain']).trim()).toBe('');
   });
 
   test('init --yes writes Husky hooks for main', () => {

@@ -22,9 +22,10 @@
  * installed under node_modules. Override with BUMP_VERSION_PROJECT_ROOT or VERSION_CHECK_ROOT if needed.
  */
 
-import { execSync, spawnSync } from 'child_process';
+import { execFileSync, execSync, spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import os from 'node:os';
 
 import {
   isRebaseOrCherryPickInProgress,
@@ -131,16 +132,6 @@ function getOriginBranchPackageVersion(branch: string, projectRoot: string, pack
 
 type PackageJson = Record<string, unknown> & { version?: string };
 
-function amendHeadWithStagedVersion(cwd: string): void {
-  const amendResult = spawnSync('git', ['commit', '--amend', '--no-edit', '--no-verify'], {
-    cwd,
-    stdio: 'inherit',
-  });
-  if (amendResult.status !== 0) {
-    process.exit(1);
-  }
-}
-
 function main(): void {
   const argv = process.argv.slice(2);
   if (argv[0] === 'init') {
@@ -168,9 +159,11 @@ function main(): void {
   const packagePath = path.join(rootDir, 'package.json');
   const pkgGitPath = packageJsonPathInGitRepo(rootDir);
 
-  // Local pre-commit / post-rebase: do not run while rebase/cherry-pick is still in progress.
+  // post-rewrite runs before Git removes rebase markers; only pre-commit skips those.
   // CI --check-only must still enforce the version constraint.
-  if (!CHECK_ONLY && shouldSkipForRebaseOrCherryPick(rootDir)) {
+  const cherryPickPath = execFileSync('git', ['rev-parse', '--git-path', 'CHERRY_PICK_HEAD'], { cwd: rootDir, encoding: 'utf-8' }).trim();
+  if (!CHECK_ONLY && ((!POST_REBASE && shouldSkipForRebaseOrCherryPick(rootDir)) ||
+    fs.existsSync(path.resolve(rootDir, cherryPickPath)))) {
     console.log(msgSkipRebaseOrCherryPick());
     process.exit(0);
   }
@@ -178,7 +171,9 @@ function main(): void {
   const baseBranch = resolveCliBaseBranch();
   tryFetchOriginBranch(baseBranch, rootDir);
 
-  const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf-8')) as PackageJson;
+  const source = CHECK_ONLY ? fs.readFileSync(packagePath, 'utf-8') :
+    execFileSync('git', ['show', `${POST_REBASE ? 'HEAD' : ''}:${pkgGitPath}`], { cwd: rootDir, encoding: 'utf-8' });
+  const pkg = JSON.parse(source) as PackageJson;
   const currentVersion = pkg.version;
   if (!currentVersion) process.exit(0);
 
@@ -212,22 +207,47 @@ function main(): void {
   }
 
   pkg.version = newVersion;
-  fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf-8');
-
-  const addResult = spawnSync('git', ['add', packagePath], {
-    cwd: rootDir,
-    stdio: 'inherit',
-  });
-  if (addResult.status !== 0) {
-    process.exit(1);
-  }
-
-  console.log(msgBumped(currentVersion, newVersion, baseBranch, cmp < 0));
+  const updated = `${JSON.stringify(pkg, null, 2)}\n`;
+  const git = (args: string[], env = process.env, input?: string) =>
+    execFileSync('git', args, { cwd: rootDir, env, input, encoding: 'utf-8' });
+  const mode = git(['ls-files', '--stage', '--', pkgGitPath]).split(' ')[0];
+  const blob = git(['hash-object', '-w', '--stdin'], process.env, updated).trim();
+  const stage = (env: NodeJS.ProcessEnv) => git(['update-index', '--add', '--cacheinfo', mode, blob, pkgGitPath], env);
 
   if (POST_REBASE) {
-    amendHeadWithStagedVersion(rootDir);
+    // Isolate the amend from anything the user has staged.
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auto-bump-'));
+    const env = { ...process.env, GIT_INDEX_FILE: path.join(tempDir, 'index') };
+    try {
+      git(['read-tree', 'HEAD'], env);
+      stage(env);
+      git(['-c', 'core.hooksPath=/dev/null', 'commit', '--amend', '--no-edit', '--no-verify'], env);
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+    // Preserve staged edits to other package fields as well.
+    const indexed = JSON.parse(git(['show', `:${pkgGitPath}`])) as PackageJson;
+    if (indexed.version === currentVersion) {
+      indexed.version = newVersion;
+      const indexBlob = git(['hash-object', '-w', '--stdin'], process.env, `${JSON.stringify(indexed, null, 2)}\n`).trim();
+      git(['update-index', '--cacheinfo', mode, indexBlob, pkgGitPath]);
+    }
     console.log(msgAmended());
+  } else {
+    stage(process.env);
   }
+
+  // Only synchronize the version in the working copy; never stage its other edits.
+  try {
+    const working = JSON.parse(fs.readFileSync(packagePath, 'utf-8')) as PackageJson;
+    if (working.version === currentVersion) {
+      working.version = newVersion;
+      fs.writeFileSync(packagePath, `${JSON.stringify(working, null, 2)}\n`, 'utf-8');
+    }
+  } catch {
+    // A deleted or temporarily invalid working copy does not affect the index.
+  }
+  console.log(msgBumped(currentVersion, newVersion, baseBranch, cmp < 0));
 
   process.exit(0);
 }

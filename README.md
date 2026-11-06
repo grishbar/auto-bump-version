@@ -96,7 +96,7 @@ Without those, the CLI walks up from `process.cwd()` to the nearest `package.jso
 
 - Accepted forms: `N.N.N` or `N.N.N-suffix` (any number of numeric segments, e.g. `1.0` or `1.2.3.4`).
 - A suffix on the MR side is **not older** than the same numeric base on origin (`14.2.1-fix` > `14.2.1`).
-- During rebase or cherry-pick (`REBASE_HEAD`, `CHERRY_PICK_HEAD`, `rebase-merge`, `rebase-apply`), local pre-commit / post-rebase **skip** so `git --continue` is not blocked. `--check-only` still enforces the constraint.
+- During rebase or cherry-pick (`REBASE_HEAD`, `CHERRY_PICK_HEAD`, `rebase-merge`, `rebase-apply`), local pre-commit **skips** so `git --continue` is not blocked. `--check-only` still enforces the constraint.
 
 ## Programmatic API
 
@@ -118,3 +118,5 @@ Also exported: `parseBumpVersionCliArgs`, `isRebaseOrCherryPickInProgress`, `DEF
 ## License
 
 MIT
+
+Pre-commit reads `package.json` from the Git index and stages only the updated indexed contents. Unstaged changes are preserved. After rebase, the post-rewrite hook reads HEAD and amends only its version, even while rebase markers still exist. Other staged changes remain pending. Cherry-pick skips local version checks.
